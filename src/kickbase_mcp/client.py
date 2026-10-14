@@ -249,7 +249,9 @@ class KickbaseClient:
         return await self.delete(f"/v4/leagues/{league_id}/market/{player_id}")
 
     async def sell_to_kickbase(self, league_id: str, player_id: str) -> Any:
-        return await self.delete(f"/v4/leagues/{league_id}/market/{player_id}/sell")
+        return await self.post(
+            f"/v4/leagues/{league_id}/market/{player_id}/sell", {}
+        )
 
     # -------------------------------------------------------------- players
 
