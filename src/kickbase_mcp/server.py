@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from datetime import UTC, datetime
 from typing import Any
 
@@ -40,13 +39,13 @@ def _get_client() -> KickbaseClient:
     return _client
 
 
-async def _league(league_id: str | None) -> str:
+def _league(league_id: str | None) -> str:
     if league_id:
         return league_id
     s = _get_settings()
     if s.league_id:
         return s.league_id
-    return await _get_client().league_id(None)
+    return _get_client().league_id(None)
 
 
 # ---------------------------------------------------------------------------
@@ -148,9 +147,9 @@ def _next_fixtures(
 
 
 @mcp.tool
-async def list_leagues() -> list[dict[str, Any]]:
+def list_leagues() -> list[dict[str, Any]]:
     """List all Kickbase leagues the account is in (id, name, budget, users)."""
-    leagues = await _get_client().list_leagues()
+    leagues = _get_client().list_leagues()
     return [
         {
             "id": str(lg.get("i")),
@@ -166,11 +165,11 @@ async def list_leagues() -> list[dict[str, Any]]:
 
 
 @mcp.tool
-async def get_my_status(league_id: str | None = None) -> dict[str, Any]:
+def get_my_status(league_id: str | None = None) -> dict[str, Any]:
     """Get your status in a league: budget, team value, points and placement."""
-    lid = await _league(league_id)
+    lid = _league(league_id)
     client = _get_client()
-    me, budget = await asyncio.gather(client.league_me(lid), client.league_budget(lid))
+    me, budget = client.league_me(lid), client.league_budget(lid)
     return {
         "leagueId": lid,
         "leagueName": me.get("lnm"),
@@ -184,10 +183,10 @@ async def get_my_status(league_id: str | None = None) -> dict[str, Any]:
 
 
 @mcp.tool
-async def get_league_overview(league_id: str | None = None) -> dict[str, Any]:
+def get_league_overview(league_id: str | None = None) -> dict[str, Any]:
     """League overview: name, competition, members and settings."""
-    lid = await _league(league_id)
-    j = await _get_client().league_overview(lid)
+    lid = _league(league_id)
+    j = _get_client().league_overview(lid)
     return {
         "id": str(j.get("i", lid)),
         "name": j.get("lnm"),
@@ -202,12 +201,12 @@ async def get_league_overview(league_id: str | None = None) -> dict[str, Any]:
 
 
 @mcp.tool
-async def get_league_ranking(
+def get_league_ranking(
     league_id: str | None = None, day: int | None = None
 ) -> dict[str, Any]:
     """League table of managers (season points, matchday points, team values)."""
-    lid = await _league(league_id)
-    j = await _get_client().league_ranking(lid, day)
+    lid = _league(league_id)
+    j = _get_client().league_ranking(lid, day)
     users = [
         {
             "userId": str(u.get("i")),
@@ -226,12 +225,12 @@ async def get_league_ranking(
 
 
 @mcp.tool
-async def get_activity_feed(
+def get_activity_feed(
     league_id: str | None = None, start: int = 0, max_items: int = 20
 ) -> Any:
     """League activity feed (transfers, market events, comments)."""
-    lid = await _league(league_id)
-    return await _get_client().activity_feed(lid, start, max_items)
+    lid = _league(league_id)
+    return _get_client().activity_feed(lid, start, max_items)
 
 
 # ---------------------------------------------------------------------------
@@ -240,23 +239,23 @@ async def get_activity_feed(
 
 
 @mcp.tool
-async def get_my_squad(league_id: str | None = None) -> list[dict[str, Any]]:
+def get_my_squad(league_id: str | None = None) -> list[dict[str, Any]]:
     """Your full squad with market value, trend, points, status and position."""
-    lid = await _league(league_id)
-    j = await _get_client().squad(lid)
+    lid = _league(league_id)
+    j = _get_client().squad(lid)
     return _players(j)
 
 
 @mcp.tool
-async def get_my_lineup(league_id: str | None = None) -> list[dict[str, Any]]:
+def get_my_lineup(league_id: str | None = None) -> list[dict[str, Any]]:
     """Your current starting eleven and bench players."""
-    lid = await _league(league_id)
-    j = await _get_client().lineup(lid)
+    lid = _league(league_id)
+    j = _get_client().lineup(lid)
     return _players(j)
 
 
 @mcp.tool
-async def set_lineup(
+def set_lineup(
     player_ids: list[str],
     formation: str = "1",
     league_id: str | None = None,
@@ -267,10 +266,10 @@ async def set_lineup(
     formation: kickbase formation type code (use the current value from
     get_my_lineup context or the app; '1' is a common default).
     """
-    lid = await _league(league_id)
+    lid = _league(league_id)
     if len(player_ids) != 11:
         raise KickbaseError("Lineup requires exactly 11 player ids")
-    return await _get_client().set_lineup(lid, formation, player_ids)
+    return _get_client().set_lineup(lid, formation, player_ids)
 
 
 # ---------------------------------------------------------------------------
@@ -279,14 +278,14 @@ async def set_lineup(
 
 
 @mcp.tool
-async def get_market(league_id: str | None = None) -> dict[str, Any]:
+def get_market(league_id: str | None = None) -> dict[str, Any]:
     """Players currently on the transfer market with price, expiry and offers.
 
     sellerUserId is null for players listed by Kickbase itself (buy instantly
     at the listed price via place_offer) and set for manager listings.
     """
-    lid = await _league(league_id)
-    j = await _get_client().market(lid)
+    lid = _league(league_id)
+    j = _get_client().market(lid)
     return {
         "day": j.get("day"),
         "teamValue": j.get("tv"),
@@ -296,12 +295,12 @@ async def get_market(league_id: str | None = None) -> dict[str, Any]:
 
 
 @mcp.tool
-async def get_market_player(
+def get_market_player(
     player_id: str, league_id: str | None = None
 ) -> dict[str, Any]:
     """Details of one market player including all offers made so far."""
-    lid = await _league(league_id)
-    j = await _get_client().market_player(lid, player_id)
+    lid = _league(league_id)
+    j = _get_client().market_player(lid, player_id)
     offers = [
         {
             "id": str(o.get("i", "")),
@@ -319,23 +318,23 @@ async def get_market_player(
 
 
 @mcp.tool
-async def search_players(
+def search_players(
     query: str,
     league_id: str | None = None,
     max_items: int = 20,
 ) -> Any:
     """Search for any Bundesliga player by name (not only market listings)."""
-    lid = await _league(league_id)
+    lid = _league(league_id)
     client = _get_client()
-    cid = await client.competition_id(lid)
-    return await client.search_players(cid, lid, query, max_items)
+    cid = client.competition_id(lid)
+    return client.search_players(cid, lid, query, max_items)
 
 
 @mcp.tool
-async def get_scouted_players(league_id: str | None = None) -> Any:
+def get_scouted_players(league_id: str | None = None) -> Any:
     """Your watchlist / scouted players."""
-    lid = await _league(league_id)
-    return await _get_client().scouted_players(lid)
+    lid = _league(league_id)
+    return _get_client().scouted_players(lid)
 
 
 # ---------------------------------------------------------------------------
@@ -344,20 +343,20 @@ async def get_scouted_players(league_id: str | None = None) -> Any:
 
 
 @mcp.tool
-async def get_player_profile(
+def get_player_profile(
     player_id: str, league_id: str | None = None
 ) -> dict[str, Any]:
     """Full player profile: stats, market value, status and club info."""
-    lid = await _league(league_id)
-    j = await _get_client().player(lid, player_id)
+    lid = _league(league_id)
+    j = _get_client().player(lid, player_id)
     return {"player": _player(j) if isinstance(j, dict) else j, "raw": j}
 
 
 @mcp.tool
-async def get_player_performance(player_id: str, league_id: str | None = None) -> Any:
+def get_player_performance(player_id: str, league_id: str | None = None) -> Any:
     """Matchday-by-matchday points history for a player."""
-    lid = await _league(league_id)
-    j = await _get_client().player_performance(lid, player_id)
+    lid = _league(league_id)
+    j = _get_client().player_performance(lid, player_id)
     out = []
     for entry in j.get("it", []):
         hist = [
@@ -380,25 +379,25 @@ async def get_player_performance(player_id: str, league_id: str | None = None) -
 
 
 @mcp.tool
-async def get_player_market_value_history(
+def get_player_market_value_history(
     player_id: str,
     timeframe: int = 30,
     league_id: str | None = None,
 ) -> Any:
     """Market value history for a player. timeframe = days back to look."""
-    lid = await _league(league_id)
-    return await _get_client().player_market_value(lid, player_id, timeframe)
+    lid = _league(league_id)
+    return _get_client().player_market_value(lid, player_id, timeframe)
 
 
 @mcp.tool
-async def get_player_transfer_history(
+def get_player_transfer_history(
     player_id: str,
     league_id: str | None = None,
     start: int = 0,
 ) -> Any:
     """Transfer history: who bought/sold this player and at which price."""
-    lid = await _league(league_id)
-    return await _get_client().player_transfer_history(lid, player_id, start)
+    lid = _league(league_id)
+    return _get_client().player_transfer_history(lid, player_id, start)
 
 
 # ---------------------------------------------------------------------------
@@ -407,31 +406,31 @@ async def get_player_transfer_history(
 
 
 @mcp.tool
-async def get_manager_squad(
+def get_manager_squad(
     user_id: str, league_id: str | None = None
 ) -> list[dict[str, Any]]:
     """Another manager's squad. Get user ids from get_league_ranking."""
-    lid = await _league(league_id)
-    j = await _get_client().manager_squad(lid, user_id)
+    lid = _league(league_id)
+    j = _get_client().manager_squad(lid, user_id)
     return _players(j)
 
 
 @mcp.tool
-async def get_manager_transfers(
+def get_manager_transfers(
     user_id: str, league_id: str | None = None, start: int = 0
 ) -> Any:
     """A manager's recent buy/sell transactions."""
-    lid = await _league(league_id)
-    return await _get_client().manager_transfers(lid, user_id, start)
+    lid = _league(league_id)
+    return _get_client().manager_transfers(lid, user_id, start)
 
 
 @mcp.tool
-async def get_user_teamcenter(
+def get_user_teamcenter(
     user_id: str, league_id: str | None = None, day: int | None = None
 ) -> Any:
     """Team center of a user (points per player for a matchday)."""
-    lid = await _league(league_id)
-    return await _get_client().user_teamcenter(lid, user_id, day)
+    lid = _league(league_id)
+    return _get_client().user_teamcenter(lid, user_id, day)
 
 
 # ---------------------------------------------------------------------------
@@ -440,14 +439,14 @@ async def get_user_teamcenter(
 
 
 @mcp.tool
-async def get_fixtures(
+def get_fixtures(
     league_id: str | None = None, day: int | None = None
 ) -> dict[str, Any]:
     """Bundesliga fixtures grouped by matchday (all or a specific day)."""
-    lid = await _league(league_id)
+    lid = _league(league_id)
     client = _get_client()
-    cid = await client.competition_id(lid)
-    j = await client.matchdays(cid)
+    cid = client.competition_id(lid)
+    j = client.matchdays(cid)
     v = j.get("value", j)
     matchdays = []
     for md in v.get("it", []):
@@ -476,12 +475,12 @@ async def get_fixtures(
 
 
 @mcp.tool
-async def get_competition_table(league_id: str | None = None) -> list[dict[str, Any]]:
+def get_competition_table(league_id: str | None = None) -> list[dict[str, Any]]:
     """Real Bundesliga table: team strength for fixture difficulty analysis."""
-    lid = await _league(league_id)
+    lid = _league(league_id)
     client = _get_client()
-    cid = await client.competition_id(lid)
-    j = await client.competition_table(cid)
+    cid = client.competition_id(lid)
+    j = client.competition_table(cid)
     rows = _team_names(j)
     return [{"teamId": tid, **info} for tid, info in rows.items()]
 
@@ -492,7 +491,7 @@ async def get_competition_table(league_id: str | None = None) -> list[dict[str, 
 
 
 @mcp.tool
-async def place_offer(
+def place_offer(
     player_id: str,
     price: int,
     league_id: str | None = None,
@@ -503,92 +502,92 @@ async def place_offer(
     buys the player instantly if your budget covers it. For manager listings
     the offer goes to the manager for accept/decline.
     """
-    lid = await _league(league_id)
-    return await _get_client().place_offer(lid, player_id, price)
+    lid = _league(league_id)
+    return _get_client().place_offer(lid, player_id, price)
 
 
 @mcp.tool
-async def withdraw_offer(
+def withdraw_offer(
     player_id: str,
     offer_id: str,
     league_id: str | None = None,
 ) -> Any:
     """Withdraw your own pending offer on a market player."""
-    lid = await _league(league_id)
-    return await _get_client().withdraw_offer(lid, player_id, offer_id)
+    lid = _league(league_id)
+    return _get_client().withdraw_offer(lid, player_id, offer_id)
 
 
 @mcp.tool
-async def accept_offer(
+def accept_offer(
     player_id: str,
     offer_id: str,
     league_id: str | None = None,
 ) -> Any:
     """Accept a manager's offer on one of your listed players. REAL SALE."""
-    lid = await _league(league_id)
-    return await _get_client().accept_offer(lid, player_id, offer_id)
+    lid = _league(league_id)
+    return _get_client().accept_offer(lid, player_id, offer_id)
 
 
 @mcp.tool
-async def decline_offer(
+def decline_offer(
     player_id: str,
     offer_id: str,
     league_id: str | None = None,
 ) -> Any:
     """Decline a manager's offer on one of your listed players."""
-    lid = await _league(league_id)
-    return await _get_client().decline_offer(lid, player_id, offer_id)
+    lid = _league(league_id)
+    return _get_client().decline_offer(lid, player_id, offer_id)
 
 
 @mcp.tool
-async def list_player_for_sale(
+def list_player_for_sale(
     player_id: str,
     price: int,
     league_id: str | None = None,
 ) -> Any:
     """Put one of your squad players on the transfer market at an asking price."""
-    lid = await _league(league_id)
-    return await _get_client().list_for_sale(lid, player_id, price)
+    lid = _league(league_id)
+    return _get_client().list_for_sale(lid, player_id, price)
 
 
 @mcp.tool
-async def remove_player_from_market(
+def remove_player_from_market(
     player_id: str,
     league_id: str | None = None,
 ) -> Any:
     """Take your listed player off the transfer market (cancel the listing)."""
-    lid = await _league(league_id)
-    return await _get_client().remove_from_market(lid, player_id)
+    lid = _league(league_id)
+    return _get_client().remove_from_market(lid, player_id)
 
 
 @mcp.tool
-async def sell_player_to_kickbase(
+def sell_player_to_kickbase(
     player_id: str,
     league_id: str | None = None,
 ) -> Any:
     """Accept Kickbase's system offer on a listed player: instant sale. REAL SALE."""
-    lid = await _league(league_id)
-    return await _get_client().sell_to_kickbase(lid, player_id)
+    lid = _league(league_id)
+    return _get_client().sell_to_kickbase(lid, player_id)
 
 
 @mcp.tool
-async def scout_player(player_id: str, league_id: str | None = None) -> Any:
+def scout_player(player_id: str, league_id: str | None = None) -> Any:
     """Add a player to your watchlist."""
-    lid = await _league(league_id)
-    return await _get_client().scout_player(lid, player_id)
+    lid = _league(league_id)
+    return _get_client().scout_player(lid, player_id)
 
 
 @mcp.tool
-async def unscout_player(player_id: str, league_id: str | None = None) -> Any:
+def unscout_player(player_id: str, league_id: str | None = None) -> Any:
     """Remove a player from your watchlist."""
-    lid = await _league(league_id)
-    return await _get_client().unscout_player(lid, player_id)
+    lid = _league(league_id)
+    return _get_client().unscout_player(lid, player_id)
 
 
 @mcp.tool
-async def collect_daily_bonus() -> Any:
+def collect_daily_bonus() -> Any:
     """Collect the daily login bonus if available."""
-    return await _get_client().collect_bonus()
+    return _get_client().collect_bonus()
 
 
 # ---------------------------------------------------------------------------
@@ -597,7 +596,7 @@ async def collect_daily_bonus() -> Any:
 
 
 @mcp.tool
-async def analyze_transfer_market(
+def analyze_transfer_market(
     league_id: str | None = None,
     horizon_matchdays: int = 3,
 ) -> dict[str, Any]:
@@ -608,10 +607,10 @@ async def analyze_transfer_market(
     upcoming opponent strength (next N matchdays). Use this to decide which
     players to sell and which market bargains to buy.
     """
-    lid = await _league(league_id)
+    lid = _league(league_id)
     client = _get_client()
-    cid = await client.competition_id(lid)
-    me, budget, squad, market, matchdays, table = await asyncio.gather(
+    cid = client.competition_id(lid)
+    me, budget, squad, market, matchdays, table = (
         client.league_me(lid),
         client.league_budget(lid),
         client.squad(lid),

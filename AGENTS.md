@@ -13,7 +13,7 @@ in README.md.
 
 ## Layout
 
-- `src/kickbase_mcp/client.py` — async API wrapper (auth, endpoints)
+- `src/kickbase_mcp/client.py` — synchronous API wrapper (auth, endpoints)
 - `src/kickbase_mcp/server.py` — FastMCP tools
 - `src/kickbase_mcp/config.py` — credential resolution
   (env vars → `.env` via dotenv; `pass://` refs must be injected by
