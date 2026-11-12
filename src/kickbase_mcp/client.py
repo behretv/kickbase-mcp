@@ -242,7 +242,7 @@ class KickbaseClient:
 
     def list_for_sale(self, league_id: str, player_id: str, price: int) -> Any:
         return self.post(
-            f"/v4/leagues/{league_id}/market/", {"playerId": player_id, "price": price}
+            f"/v4/leagues/{league_id}/market/", {"pi": player_id, "prc": price}
         )
 
     def remove_from_market(self, league_id: str, player_id: str) -> Any:
